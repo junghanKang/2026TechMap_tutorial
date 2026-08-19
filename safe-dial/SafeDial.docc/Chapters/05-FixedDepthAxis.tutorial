@@ -1,0 +1,71 @@
+@Tutorial(time: 18) {
+    @Intro(title: "ARKit에서 고정 z축 깊이 측정하기") {
+        iPhone을 돌리는 대신 시작할 때 바라보던 방향으로 앞뒤 이동해 자물쇠를 선택합니다. 카메라의
+        매 프레임 전방이 아니라 시작 프레임의 전방을 고정해야 회전이 가짜 깊이로 섞이지 않습니다.
+    }
+
+    @Section(title: "고정 축 정의하기") {
+        @ContentAndMedia {
+            기준 프레임에서 월드 위치와 전방 벡터를 저장합니다. 이후 깊이는 현재 위치의 변위를 그
+            벡터에 내적한 값입니다. 시작 방향으로 이동하면 양수입니다.
+
+            <!-- IMAGE_REQUIRED: CH05-FIXED-Z-AXIS -->
+            > 이미지 자리: startPosition, startForward, currentPosition과 내적 관계
+        }
+
+        @Steps {
+            @Step {
+                기준이 없는 첫 프레임에서 카메라 transform의 위치와 `-z` 방향을 저장합니다.
+                @Code(name: "DepthTrackingManager.swift", file: "05-fixed-axis.swift")
+            }
+
+            @Step {
+                현재 위치에서 기준 위치를 뺀 변위를 고정 전방 벡터에 투영합니다. 이 값만 게임 계층에
+                `Double` 미터 단위로 전달합니다.
+            }
+        }
+    }
+
+    @Section(title: "가벼운 월드 트래킹 세션 만들기") {
+        @ContentAndMedia {
+            현실 오브젝트를 배치하지 않으므로 평면 검출, 환경 텍스처링, 조명 추정은 필요하지 않습니다.
+            필요한 것은 카메라와 관성 센서가 결합된 위치 추적뿐입니다.
+        }
+
+        @Steps {
+            @Step {
+                `ARWorldTrackingConfiguration`에서 사용하지 않는 기능을 끄고 세션 delegate를 메인 큐에
+                둡니다.
+                @Code(name: "DepthTrackingManager.swift", file: "05-session-configuration.swift")
+            }
+
+            @Step {
+                `start`, `recenter`, `stop` 세 수명 API를 제공합니다. 재보정은 세션 전체를 새로 만들지
+                않고 다음 정상 프레임을 새 기준으로 삼습니다.
+            }
+        }
+    }
+
+    @Section(title: "추적 상태를 값과 함께 전달하기") {
+        @ContentAndMedia {
+            숫자만 흘리면 초기화 중이거나 특징점이 부족한 프레임도 게임이 사용합니다. 깊이와 함께
+            축약한 tracking state와 단조 증가 timestamp를 전달합니다.
+
+            <!-- IMAGE_REQUIRED: CH05-TRACKING-STATES -->
+            > 이미지 자리: normal과 limited/notAvailable에서 입력이 열리고 닫히는 흐름
+        }
+
+        @Steps {
+            @Step {
+                `ARCamera.TrackingState`를 앱이 표시하고 검사하기 쉬운 enum으로 바꿉니다. `.normal`만
+                사용 가능한 값으로 봅니다.
+                @Code(name: "DepthTrackingManager.swift", file: "05-tracking-state.swift")
+            }
+
+            @Step {
+                interruption이 끝나면 이전 월드 원점이 이어진다고 가정하지 않고 기준을 비웁니다.
+                화면 계층은 사용자가 명시적으로 재보정할 때까지 다이얼 입력을 닫습니다.
+            }
+        }
+    }
+}

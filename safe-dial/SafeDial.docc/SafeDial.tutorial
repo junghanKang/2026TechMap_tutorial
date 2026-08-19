@@ -1,0 +1,53 @@
+@Tutorials(name: "Spatial Safe Dial") {
+    @Intro(title: "소리의 형태와 공간 깊이로 여는 다이얼") {
+        터치 다이얼의 기계음을 같은 타임라인의 햅틱으로 옮기고, iPhone을 앞뒤로 움직인
+        깊이를 세 자물쇠에 연결합니다. 완성 과정의 중심은 오디오·햅틱 파이프라인과
+        ARKit 고정 z축 입력입니다.
+
+        각 튜토리얼은 세 개 안팎의 섹션과 짧은 스텝으로 구성됩니다. 화면 장식보다
+        피드백 사건, 깊이 판정, 복구 경계를 먼저 이해하고 마지막에 한 흐름으로 합칩니다.
+
+        <!-- IMAGE_REQUIRED: HERO-FINAL-DIAL -->
+        > 이미지 자리: 세 깊이 자물쇠와 터치 다이얼이 함께 보이는 완성 화면
+    }
+
+    @Chapter(name: "1. 터치 다이얼 기준선") {
+        끊김 없는 원형 드래그와 게임 모델의 입력 경계를 준비합니다.
+        @TutorialReference(tutorial: "doc:01-Foundation")
+    }
+
+    @Chapter(name: "2. WAV를 AHAP으로 변환") {
+        소리의 RMS 엔벌로프와 밝기를 추출해 오디오와 햅틱이 함께 든 AHAP을 만듭니다.
+        @TutorialReference(tutorial: "doc:02-WaveformToAHAP")
+    }
+
+    @Chapter(name: "3. Core Haptics 재생기") {
+        엔진 수명, cue 로딩, reusable player 풀과 즉시 복구 경로를 구성합니다.
+        @TutorialReference(tutorial: "doc:03-HapticEngine")
+    }
+
+    @Chapter(name: "4. 다이얼 사건과 피드백") {
+        눈금, 정답, 개방 사건에 cue를 연결하고 런타임 gain의 소유권을 한곳에 둡니다.
+        @TutorialReference(tutorial: "doc:04-FeedbackEvents")
+    }
+
+    @Chapter(name: "5. 고정 z축 깊이") {
+        ARKit 월드 트래킹에서 시작 방향을 고정하고 앞뒤 이동량만 계산합니다.
+        @TutorialReference(tutorial: "doc:05-FixedDepthAxis")
+    }
+
+    @Chapter(name: "6. 세 깊이 구간") {
+        히스테리시스로 깊이를 안정된 세 구간으로 바꾸고 화면 원근과 판정을 분리합니다.
+        @TutorialReference(tutorial: "doc:06-DepthZones")
+    }
+
+    @Chapter(name: "7. 도착 사건과 입력 클러치") {
+        유효한 zone 진입만 단발 피드백으로 만들고 맞는 깊이에서만 다이얼을 엽니다.
+        @TutorialReference(tutorial: "doc:07-ArrivalAndClutch")
+    }
+
+    @Chapter(name: "8. 통합과 검증") {
+        추적 복구, 재보정, 수명 주기와 자동·실기기 검증을 한 계약으로 묶습니다.
+        @TutorialReference(tutorial: "doc:08-IntegrationAndValidation")
+    }
+}

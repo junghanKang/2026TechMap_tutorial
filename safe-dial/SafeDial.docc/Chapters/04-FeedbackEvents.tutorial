@@ -1,0 +1,71 @@
+@Tutorial(time: 18) {
+    @Intro(title: "다이얼 사건에 오디오와 햅틱 연결하기") {
+        재생기는 cue를 어떻게 재생하는지만 압니다. 게임 모델은 눈금 통과, 정답 맞물림, 자물쇠 개방
+        같은 의미 있는 사건을 만들고 그 순간에 필요한 cue와 세기를 전달합니다.
+    }
+
+    @Section(title: "근접도와 방향을 출력값으로 바꾸기") {
+        @ContentAndMedia {
+            게임 규칙은 `0...1` 근접도와 방향 일치 여부만 제공합니다. 별도 tuning 값이 반응 곡선,
+            최소·최대 세기, 역방향 감쇠를 결정하면 판정 상수와 촉감 조정이 섞이지 않습니다.
+
+            <!-- IMAGE_REQUIRED: CH04-GAIN-CURVES -->
+            > 이미지 자리: 근접도에 따른 햅틱 세기·오디오 볼륨 곡선과 역방향 감쇠
+        }
+
+        @Steps {
+            @Step {
+                raw proximity에 방향 감쇠를 적용하고 지수 곡선으로 오디오·햅틱 값을 각각 계산합니다.
+                @Code(name: "FeedbackTuning.swift", file: "04-feedback-tuning.swift")
+            }
+
+            @Step {
+                튜닝 입력은 Core Haptics 범위를 벗어나지 않도록 sanitize합니다. 최소값이 최대값보다
+                커지는 설정도 여기서 정리합니다.
+            }
+        }
+    }
+
+    @Section(title: "게임 사건을 cue로 매핑하기") {
+        @ContentAndMedia {
+            눈금은 두 detent cue를 번갈아 재생하고, 정답은 최대 세기의 마지막 클릭을 유지합니다.
+            개방 cue는 마지막 클릭과 겹치지 않게 모델 시간으로 짧게 예약합니다.
+
+            <!-- IMAGE_REQUIRED: CH04-EVENT-TIMELINE -->
+            > 이미지 자리: detent → lock click → 150ms silence → release sequence 타임라인
+        }
+
+        @Steps {
+            @Step {
+                눈금 번호가 바뀌고 최소 간격을 지난 프레임에서만 click 사건을 냅니다. 빠른 회전에서
+                같은 눈금이 중복 재생되지 않습니다.
+                @Code(name: "DialGameModel.swift", file: "04-event-routing.swift")
+            }
+
+            @Step {
+                게이트가 확정되면 lock click을 재생하고 다음 개방 cue 시각을 저장합니다. 비동기 타이머
+                대신 주입 가능한 모델 시각을 쓰면 자동 검사가 같은 순서를 재현할 수 있습니다.
+            }
+        }
+    }
+
+    @Section(title: "gain 소유권을 하나로 만들기") {
+        @ContentAndMedia {
+            AHAP의 정적 이벤트가 파형 모양을 소유하고, advanced player의 dynamic parameter가 사건별
+            전체 gain을 소유합니다. 같은 control parameter를 두 층에서 동시에 만들지 않습니다.
+        }
+
+        @Steps {
+            @Step {
+                재생 API는 의미가 드러나는 `playClick`, `playLockReleaseSequence`, `playDepthArrival`로
+                제한합니다. 게임 모델은 Core Haptics 타입을 직접 알 필요가 없습니다.
+                @Code(name: "FeedbackEvents.swift", file: "04-feedback-events.swift")
+            }
+
+            @Step {
+                오디오만·햅틱만 들어보는 mute 토글과 고정 cue gain probe를 마련합니다. 곡선 차이와
+                cue 자체의 차이를 분리해서 비교할 수 있습니다.
+            }
+        }
+    }
+}
