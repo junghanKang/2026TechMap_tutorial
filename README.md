@@ -1,33 +1,42 @@
-# Spatial Safe Dial — DocC Tutorial Preview
+# Spatial Safe Dial Lab — DocC Tutorial
 
-터치 다이얼의 기계음을 오디오·햅틱으로 구성하고, ARKit의 고정 z축 깊이를 세 자물쇠에 연결하는 과정을 다루는 DocC 튜토리얼입니다.
-
-> 현재 상태는 **v0.1 Preview**입니다. 8개 챕터의 본문과 코드 예제는 공개되어 있으며, 설명 이미지 17개는 순차적으로 추가할 예정입니다.
+완성된 iPhone 샘플 앱을 먼저 실행하고, 공간 깊이·입력 클러치·오디오·햅틱을 만드는 핵심 값만 바꿔보는 **샘플 코드 실험형 DocC 튜토리얼**입니다.
 
 ## 튜토리얼 보기
 
-- [Spatial Safe Dial 튜토리얼](https://junghanKang.github.io/2026TechMap_tutorial/tutorials/safedial/)
+- [Spatial Safe Dial Lab](https://junghanKang.github.io/2026TechMap_tutorial/tutorials/safedial/)
+- [완성 프로젝트 ZIP 내려받기](https://github.com/junghanKang/2026TechMap_tutorial/archive/refs/heads/main.zip)
+
+GitHub Pages는 정적 문서입니다. 실제 앱은 저장소를 clone하거나 ZIP을 받은 뒤 `safe-dial.xcodeproj`를 Xcode에서 열어 실행합니다.
 
 ## 구성
 
-1. 터치 다이얼 기준선
-2. WAV를 AHAP으로 변환
-3. Core Haptics 재생기
-4. 다이얼 사건과 피드백
-5. ARKit 고정 z축 깊이
-6. 세 깊이 구간
-7. 도착 사건과 입력 클러치
-8. 통합과 검증
+1. 완성 샘플 실행
+2. 회전과 깊이 분리
+3. 세 깊이 구간 튜닝
+4. 공간 위치로 다이얼 잠그기
+5. 클릭의 소리와 촉감 조율
+6. 도착 사건과 나만의 변주
 
-전체 분량은 8챕터, 24섹션, 54스텝이며 28개의 코드 리소스를 포함합니다.
+전체 분량은 6개 장, 18개 섹션, 59개 스텝이며 33개의 코드 패널과 7개의 실제 앱 화면 이미지를 포함합니다.
 
 ## 요구 환경
 
 - Xcode 26.4 이상
-- iOS 26.4 이상
-- ARKit 월드 트래킹을 지원하는 iPhone 실기기
+- iOS 26.4 이상 iPhone 실기기
+- ARKit World Tracking과 Core Haptics 지원
 - LiDAR는 필요하지 않음
 - 카메라 권한 필요
+
+## 앱 실행
+
+```sh
+git clone https://github.com/junghanKang/2026TechMap_tutorial.git
+cd 2026TechMap_tutorial
+open safe-dial.xcodeproj
+```
+
+Xcode에서 자신의 Team과 고유한 Bundle Identifier를 지정한 뒤 iPhone을 실행 대상으로 선택합니다. 깊이 수동 주입과 튜닝 도구는 Debug 빌드에서 사용할 수 있습니다.
 
 ## 로컬 DocC 빌드
 
@@ -45,4 +54,4 @@ xcodebuild docbuild \
 
 ## 출처
 
-이 프리뷰는 `spatial-lab`의 `007f-spatial-depth-dial-lifecycle-refactor-karl` 스케치를 기준으로 만들었습니다.
+이 배포본은 `spatial-lab`의 `007g-spatial-depth-dial-guided-experiments-karl` 스케치를 기준으로 합니다.

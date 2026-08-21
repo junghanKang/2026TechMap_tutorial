@@ -1,29 +1,15 @@
-private func startReusablePlayer(
-    _ cue: Cue,
-    hapticGain: Float,
-    audioGain: Float
-) -> Bool {
-    guard let slot = playerPool[cue] else { return false }
+private func play(_ cue: Cue, hapticGain: Float = 1, audioGain: Float = 1) {
+    guard supportsHaptics, ensureEngineIsReady() != nil else { return }
 
-    do {
-        try slot.player.sendParameters([
-            CHHapticDynamicParameter(
-                parameterID: .hapticIntensityControl,
-                value: min(max(hapticGain, 0), 1),
-                relativeTime: 0
-            ),
-            CHHapticDynamicParameter(
-                parameterID: .audioVolumeControl,
-                value: min(max(audioGain, 0), 1),
-                relativeTime: 0
-            ),
-        ], atTime: CHHapticTimeImmediate)
-
-        try slot.player.start(atTime: CHHapticTimeImmediate)
-        slot.isPlaying = true
-        return true
-    } catch {
-        slot.isPlaying = false
-        return false
+    if startReusablePlayer(cue, hapticGain: hapticGain, audioGain: audioGain) {
+        return
     }
+
+    // 사용자 입력으로 발생한 현재 cue를 버리지 않는다. 엔진과 고정 풀을 한 번 다시 만들고
+    // 같은 cue를 즉시 재시도한다. 두 번째 실패는 다음 입력의 재시작 경로로 넘긴다.
+    diagnostics.immediateRetryCount += 1
+    diagnostics.engineState = "즉시 복구 중"
+    restart()
+    guard diagnostics.engineState == "실행 중" else { return }
+    _ = startReusablePlayer(cue, hapticGain: hapticGain, audioGain: audioGain)
 }

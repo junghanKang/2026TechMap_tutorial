@@ -1,0 +1,3 @@
+func recenter() {
+    startPosition = nil
+}

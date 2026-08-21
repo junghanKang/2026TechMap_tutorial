@@ -1,6 +1,6 @@
 //
 //  DepthArrivalFeedbackResolver.swift
-//  safe-dial (007f)
+//  safe-dial (007g)
 //
 
 /// 깊이 구간 판정을 미해결 자물쇠의 **유효한 도착 사건**으로 바꾼다.

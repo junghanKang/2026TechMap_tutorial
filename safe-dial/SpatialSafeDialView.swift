@@ -1,6 +1,6 @@
 //
 //  SpatialSafeDialView.swift
-//  safe-dial (007f)
+//  safe-dial (007g)
 //
 
 import Combine
@@ -8,7 +8,10 @@ import SwiftUI
 
 struct SpatialSafeDialView: View {
     @State private var model = SpatialSafeDialModel()
-    @State private var showsDebug = false
+    @State private var showsDebug = UserDefaults.standard.bool(forKey: "debugShowPanel")
+    @State private var showsTuning = UserDefaults.standard.bool(forKey: "debugShowTuning")
+    private let placesDebugPanelFirst = UserDefaults.standard.bool(forKey: "debugPanelFirst")
+    private let showsFeedbackPanelOnly = UserDefaults.standard.bool(forKey: "debugFeedbackOnly")
     #if DEBUG
     @State private var gainProbeTask: Task<Void, Never>?
     @State private var gainProbeIsRunning = false
@@ -24,6 +27,19 @@ struct SpatialSafeDialView: View {
             ScrollView {
                 VStack(spacing: 22) {
                     title
+
+                    if showsDebug && placesDebugPanelFirst {
+                        if showsFeedbackPanelOnly {
+                            feedbackTuningPanel
+                                .font(.system(.caption, design: .monospaced))
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(14)
+                                .background(.quaternary.opacity(0.45), in: RoundedRectangle(cornerRadius: 14))
+                        } else {
+                            debugPanel
+                        }
+                    }
+
                     stageProgress
                     DepthDialStack(model: model, size: 236)
                     ActiveLockCaption(model: model)
@@ -36,7 +52,7 @@ struct SpatialSafeDialView: View {
                     controls
                         .disabled(controlsAreDisabledForGainProbe)
 
-                    if showsDebug { debugPanel }
+                    if showsDebug && !placesDebugPanelFirst { debugPanel }
                 }
                 .padding(.horizontal, 20)
                 .padding(.vertical, 18)
@@ -254,7 +270,7 @@ struct SpatialSafeDialView: View {
 
     private var gainOwnershipProbePanel: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("007f GAIN RANGE PROBE")
+            Text("007g GAIN RANGE PROBE")
                 .font(.caption.bold())
             Text("dial-detent-01 고정 · haptic gain 0.10 / 0.40 / 1.00")
                 .foregroundStyle(.secondary)
@@ -488,7 +504,7 @@ struct SpatialSafeDialView: View {
     }
 
     private var feedbackTuningPanel: some View {
-        DisclosureGroup {
+        DisclosureGroup(isExpanded: $showsTuning) {
             VStack(alignment: .leading, spacing: 12) {
                 Toggle("Haptic 출력", isOn: hapticsEnabledBinding)
                 Toggle("Audio 출력", isOn: audioEnabledBinding)

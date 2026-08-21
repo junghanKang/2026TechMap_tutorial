@@ -1,0 +1,88 @@
+@Tutorial(time: 15) {
+    @Intro(title: "제자리 회전과 앞뒤 이동을 구분하기") {
+        Safe Dial은 폰을 시작 방향으로 옮긴 거리를 입력으로 씁니다. 매 프레임 달라지는 카메라 전방이
+        아니라 재보정 순간의 전방을 고정해야, 폰을 돌리는 동작이 가짜 깊이로 섞이지 않습니다.
+
+        @Image(source: "02-fixed-depth.png", alt: "DEBUG 패널에서 10cm 고정 z축 깊이와 현재 zone을 확인하는 모습")
+    }
+
+    @Section(title: "수정 전에 세 동작 측정하기") {
+        @ContentAndMedia {
+            - **읽을 파일:** `DepthProbeView.swift`, `DepthTrackingManager.swift`
+            - **이번 장의 변경:** 없음. 먼저 현재 구현의 기준 데이터를 만듭니다.
+
+            앱 오른쪽 위 **측정**을 열고 같은 위치에서 정지, 제자리 회전, 앞쪽 이동을 따로 기록합니다.
+            숫자의 절대값보다 회전 변화가 자물쇠 간격 10cm보다 충분히 작은지가 중요합니다.
+
+            @Image(source: "02-fixed-depth.png", alt: "측정과 DEBUG 패널에서 고정 z축 깊이를 읽는 화면")
+        }
+
+        @Steps {
+            @Step {
+                폰을 세워 든 채 재보정하고 5초 동안 정지합니다. 표시되는 z 깊이의 최소·최대 범위를
+                적습니다.
+            }
+
+            @Step {
+                발 위치는 그대로 두고 폰을 천천히 왼쪽과 오른쪽으로 돌립니다. 회전 중 최대 깊이 변화를
+                기록합니다.
+            }
+
+            @Step {
+                처음 자세로 돌아와 폰 전체를 앞쪽으로 약 10cm 옮깁니다. 회전 때보다 명확하게 큰 변화가
+                나오는지 확인합니다.
+            }
+        }
+    }
+
+    @Section(title: "수정 전·후 구조 비교하기") {
+        @ContentAndMedia {
+            다음 **수정 전 문제 구조**는 현재 앱에 적용하지 않습니다. 현재 카메라의 전방 벡터를 매
+            프레임 다시 쓰므로, 폰을 회전하면 측정 축도 함께 돌아갑니다.
+
+            현재 구현은 재보정 프레임의 `startPosition`과 `startForward`를 한 번 저장합니다. 이후
+            위치 변화량을 그 고정 축에 내적한 값 하나만 게임 계층으로 전달합니다.
+        }
+
+        @Steps {
+            @Step {
+                적용하지 않을 움직이는 전방축의 문제 구조를 확인합니다.
+                @Code(name: "DepthTrackingManager.swift", file: "02-moving-axis-before.swift", reset: true)
+            }
+
+            @Step {
+                재보정 순간에만 `startForward`를 저장하고, 이후 위치 변화만 그 축에 내적하는 현재
+                구현을 비교합니다.
+                @Code(name: "DepthTrackingManager.swift", file: "02-fixed-axis-after.swift", previousFile: "02-moving-axis-before.swift") {
+                    @Image(source: "02-fixed-depth.png", alt: "고정 축에서 10cm 깊이를 표시하는 DEBUG 화면")
+                }
+            }
+
+            @Step {
+                `recenter()`가 기준 위치를 비우고 다음 정상 프레임을 새 0cm로 삼는지 확인합니다.
+                @Code(name: "DepthTrackingManager.swift", file: "02-recenter.swift", reset: true)
+            }
+        }
+    }
+
+    @Section(title: "측정 결과로 구현 선택 판단하기") {
+        @ContentAndMedia {
+            007f의 동일 구현에서 기록한 참고 범위는 정지 약 0.88cm, 왼쪽 180° 회전 약 3.68cm,
+            오른쪽 180° 회전 약 5.20cm였습니다. 기기와 환경마다 달라지므로 이 숫자를 통과 기준으로
+            복사하지 말고 자신의 10cm 전진 결과와 비교합니다.
+        }
+
+        @Steps {
+            @Step {
+                `정지 변동 / 회전 변동 / 10cm 전진` 세 값을 나란히 적습니다. 회전 변동이 전진과
+                구별되지 않으면 주변 무늬와 이동 속도를 바꿔 다시 측정합니다.
+            }
+
+            @Step {
+                작은 과제로 폰을 90° 돌린 상태에서 재보정한 뒤, 새로 바라보는 방향으로 10cm 이동합니다.
+                재보정 이후의 방향이 새 고정 축이 되는지 확인합니다. 기대 결과는 **회전만으로 자물쇠가
+                쉽게 바뀌지 않고, 번역 이동에는 깊이가 반응하는 것**입니다.
+            }
+        }
+    }
+}

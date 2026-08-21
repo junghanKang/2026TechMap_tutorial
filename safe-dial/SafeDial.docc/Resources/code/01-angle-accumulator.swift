@@ -1,27 +1,39 @@
 import Foundation
 
 struct CircularDialAccumulator {
+    private(set) var totalAngle: Double = 0
+
     private var previousTouchAngle: Double?
 
-    mutating func beginGrip(at angle: Double) {
-        previousTouchAngle = angle
-    }
-
-    mutating func updateGrip(to angle: Double) -> Double {
-        guard let previousTouchAngle else {
-            beginGrip(at: angle)
+    mutating func update(touchAngle: Double) -> Double {
+        guard touchAngle.isFinite else {
+            endGrip()
             return 0
         }
 
-        var delta = angle - previousTouchAngle
-        if delta > .pi { delta -= 2 * .pi }
-        if delta < -.pi { delta += 2 * .pi }
+        guard let previousTouchAngle else {
+            self.previousTouchAngle = touchAngle
+            return 0
+        }
 
-        self.previousTouchAngle = angle
+        var delta = touchAngle - previousTouchAngle
+        if delta > .pi {
+            delta -= 2 * .pi
+        } else if delta < -.pi {
+            delta += 2 * .pi
+        }
+
+        self.previousTouchAngle = touchAngle
+        totalAngle += delta
         return delta
     }
 
     mutating func endGrip() {
         previousTouchAngle = nil
+    }
+
+    mutating func reset() {
+        totalAngle = 0
+        endGrip()
     }
 }

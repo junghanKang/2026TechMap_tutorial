@@ -1,4 +1,5 @@
 struct DepthArrivalFeedbackResolver {
+
     struct Event {
         let zone: DepthZoneResolver.Zone
     }
@@ -17,6 +18,7 @@ struct DepthArrivalFeedbackResolver {
 
         guard let currentZone,
               currentZone.rawValue >= solvedCount else { return nil }
+
         return Event(zone: currentZone)
     }
 

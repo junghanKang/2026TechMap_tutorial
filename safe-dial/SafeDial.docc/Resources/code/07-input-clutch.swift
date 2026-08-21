@@ -1,7 +1,6 @@
 func setInputEnabled(_ enabled: Bool) {
     guard enabled != isInputEnabled else { return }
     isInputEnabled = enabled
-
     holdingSince = nil
     speed = 0
     lastUpdateAt = nil
@@ -14,9 +13,12 @@ func setInputEnabled(_ enabled: Bool) {
         position = 0
         reading = 0
         proximity = 0
+        grip = .loose
         isArmed = true
+        isTracking = false // 다음 유효 회전 입력에서 true가 된다.
+    } else {
+        isTracking = false
+        proximity = 0
+        grip = .loose
     }
-
-    // 다음 유효한 회전 표본이 들어오기 전까지 피드백을 닫는다.
-    isTracking = false
 }

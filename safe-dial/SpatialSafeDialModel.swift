@@ -1,6 +1,6 @@
 //
 //  SpatialSafeDialModel.swift
-//  safe-dial (007f)
+//  safe-dial (007g)
 //
 
 import Foundation
@@ -250,8 +250,8 @@ final class SpatialSafeDialModel {
 /// 잡지 못한 이유가 그것이었다. 이제 임의 깊이·단계를 박고 스크린샷으로 확인할 수 있다.
 ///
 /// ```bash
-/// xcrun simctl launch booted com.spatiallab.sketch007f \
-///   -debugAutoStart YES -debugSolved 1 -debugDepth 0.02
+/// xcrun simctl launch booted com.spatiallab.sketch007g \
+///   -debugAutoStart YES -debugSolved 1 -debugDepth 0.02 -debugShowPanel YES
 /// ```
 extension SpatialSafeDialModel {
 

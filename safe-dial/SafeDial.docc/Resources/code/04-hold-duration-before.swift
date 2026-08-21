@@ -1,0 +1,9 @@
+private let minGateGap = 8.0
+private let proximityRange = 12.0
+private let lockTolerance = 1.5
+private let holdDuration = 0.3
+private let stopSpeed = 3.0
+private let directionSpeed = 0.3
+private let rearmMargin = 3.0
+private let minClickInterval = 0.016
+private let sequenceSilence = 0.15
