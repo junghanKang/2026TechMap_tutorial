@@ -1,3 +1,0 @@
-func recenter() {
-    startPosition = nil
-}

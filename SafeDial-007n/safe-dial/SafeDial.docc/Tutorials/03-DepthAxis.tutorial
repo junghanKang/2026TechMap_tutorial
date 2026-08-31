@@ -1,0 +1,190 @@
+@Tutorial(time: 40) {
+    @Intro(title: "앞뒤 움직임으로 위치 찾기") {
+        @Image(
+            source: "tutorial-chapter-depth-axis.png",
+            alt: "실제 앱 화면 세 개가 시작점, 10센티미터 앞, 20센티미터 앞의 직선 축에 놓인 모습"
+        )
+
+        ARKit의 세계 좌표 z값을 그대로 쓰지 않습니다. 시작할 때 기기가 바라보던 방향을 기준으로 정하고,
+        그 뒤의 이동만 그 방향으로 재서 앞뒤 움직임으로 바꿉니다.
+
+        이 장을 마치면 시작 방향을 기준으로 앞뒤 거리를 재고, 작은 흔들림에도 쉽게 바뀌지 않는 세 위치를
+        만들 수 있습니다.
+
+        ARKit이 낯설다면 Apple의
+        [ARWorldTrackingConfiguration](https://developer.apple.com/documentation/arkit/arworldtrackingconfiguration)과
+        [카메라 transform](https://developer.apple.com/documentation/arkit/arcamera/transform)을 먼저 읽어 보세요.
+        Simulator는 실제 이동을 측정할 수 없으므로 마지막 확인은 실기기에서 합니다.
+    }
+
+    @Section(title: "처음 바라본 방향을 기준으로 삼기") {
+        @ContentAndMedia {
+            World Tracking은 기기의 3차원 위치와 방향을 알려 줍니다. 하지만 회전할 때마다 “앞”을 새로
+            정하면, 손목을 돌린 것까지 앞뒤 이동으로 잘못 읽을 수 있습니다. 첫 정상 프레임의 위치와
+            방향을 시작점으로 저장하고, 게임이 끝날 때까지 바꾸지 않습니다.
+
+            추적을 믿을 수 없을 때의 깊이는 0m가 아닙니다. `depth`를 optional로 두어, 값이 없다는 상태와
+            실제 시작점 0m를 구분합니다.
+        }
+
+        @Steps {
+            @Step {
+                앞뒤 거리, 카메라 추적 상태, 프레임 시각을 `Reading` 하나로 묶습니다. `depth`가 `nil`이면
+                위치를 고르지 않고 사용자에게 추적을 회복하라고 안내할 수 있습니다.
+
+                @Code(
+                    name: "DepthTrackingManager.swift",
+                    file: "03-01-01-TrackingReading.swift",
+                    previousFile: "03-01-00-Tracking-Scaffold.swift"
+                )
+            }
+
+            @Step {
+                `ARWorldTrackingConfiguration`으로 측정을 시작하고, 새 프레임을 받는 delegate를 연결합니다.
+                시작점을 다시 잡을 때는 session을 새로 만들지 않고, 저장한 시작점만 비운 뒤 다음 정상
+                프레임을 기다립니다.
+
+                @Code(
+                    name: "DepthTrackingManager.swift",
+                    file: "03-01-02-WorldTracking.swift",
+                    previousFile: "03-01-01-TrackingReading.swift"
+                )
+            }
+
+            @Step {
+                추적 상태가 normal이 아니면 거리 값 없이 `Reading`을 보내고 끝냅니다. 정상 프레임만
+                다음 단계의 기준 축에 전달해 거리를 계산합니다. 믿을 수 없는 값이 시작점이나 위치에
+                섞이지 않게 합니다.
+
+                @Code(
+                    name: "DepthTrackingManager.swift",
+                    file: "03-01-03-RejectInvalidTracking.swift",
+                    previousFile: "03-01-02-WorldTracking.swift"
+                )
+            }
+
+            @Step {
+                첫 정상 프레임의 위치와 카메라가 바라보는 방향을 저장합니다. 이후 기기를 돌려도 이 기준은
+                바꾸지 않습니다.
+
+                @Code(
+                    name: "FixedDepthAxis.swift",
+                    file: "03-01-04-FixedForwardAxis.swift",
+                    previousFile: "03-01-04-Projection-Scaffold.swift"
+                )
+            }
+
+            @Step {
+                현재 위치에서 시작 위치를 빼고, 그 이동이 기준 방향으로 얼마나 갔는지 계산합니다. 이 값이
+                시작점에서 앞이나 뒤로 움직인 거리(m)입니다.
+
+                @Code(
+                    name: "FixedDepthAxis.swift",
+                    file: "03-01-05-ProjectDepth.swift",
+                    previousFile: "03-01-04-FixedForwardAxis.swift"
+                )
+            }
+        }
+    }
+
+    @Section(title: "연속된 거리를 세 위치로 나누기") {
+        @ContentAndMedia {
+            자물쇠의 위치는 시작점, 10cm 앞, 20cm 앞입니다. 중심에서 3cm 안으로 들어오면 그 위치를
+            고르고, 한 번 고른 위치는 4.5cm 밖으로 나갈 때까지 유지합니다. 들어올 때보다 나갈 때 범위를
+            넓게 잡아 손떨림과 작은 오차를 흡수합니다.
+
+            먼저 지금 위치를 계속 유지할 수 있는지 확인합니다. 그 위치를 벗어난 뒤에만 새 위치를 찾으면,
+            경계에서 두 위치가 번갈아 선택되는 일을 막을 수 있습니다.
+        }
+
+        @Steps {
+            @Step {
+                세 위치의 이름, 중심 거리, 들어오는 범위, 나가는 범위, 현재 고른 위치를 정의합니다.
+                코드는 모든 거리를 미터로 저장합니다.
+
+                @Code(
+                    name: "DepthZoneResolver.swift",
+                    file: "03-02-01-ZoneCenters.swift",
+                    previousFile: "03-02-00-Zones-Scaffold.swift"
+                )
+            }
+
+            @Step {
+                중심 개수, 두 범위의 크기 순서, 이웃한 위치가 너무 겹치지 않는지를 검사합니다. 잘못된
+                설정은 앱이 이상하게 움직인 뒤가 아니라, 만들 때 바로 막습니다.
+
+                @Code(
+                    name: "DepthZoneResolver.swift",
+                    file: "03-02-02-ValidateConfiguration.swift",
+                    previousFile: "03-02-01-ZoneCenters.swift"
+                )
+            }
+
+            @Step {
+                현재 위치의 중심에서 나가는 범위 안에 있으면 같은 위치를 계속 씁니다. 그 범위를 벗어난
+                뒤에만 새 위치를 고를 수 있게 합니다.
+
+                @Code(
+                    name: "DepthZoneResolver.swift",
+                    file: "03-02-03-HoldCurrentZone.swift",
+                    previousFile: "03-02-02-ValidateConfiguration.swift"
+                )
+            }
+
+            @Step {
+                현재 위치를 벗어난 뒤 세 중심의 들어오는 범위를 확인합니다. 어느 범위에도 없으면 `nil`을
+                반환해, 두 위치 사이에는 아무 자물쇠도 고르지 않는 공간을 남깁니다.
+
+                @Code(
+                    name: "DepthZoneResolver.swift",
+                    file: "03-02-04-EnterNewZone.swift",
+                    previousFile: "03-02-03-HoldCurrentZone.swift"
+                )
+            }
+        }
+    }
+
+    @Section(title: "새 위치에 도착한 순간만 알리기") {
+        @ContentAndMedia {
+            ARKit은 같은 위치 값을 여러 번 보냅니다. 하지만 도착 소리는 한 번만 나야 합니다. 위치 판정 코드인
+            `resolver`는 마지막 위치를 기억하고, 실제로 다른 위치가 선택됐을 때만 다음 확인을 합니다.
+
+            이미 연 자물쇠로 돌아가는 것은 새 진행이 아닙니다. 아직 열지 않은 자물쇠 위치일 때만
+            도착 신호를 보냅니다.
+        }
+
+        @Steps {
+            @Step {
+                현재 게임 상태가 유효한지와 선택한 위치가 바뀌었는지를 확인한 뒤, 그 위치를 기억합니다.
+                같은 위치에 계속 머무는 값은 여기서 끝냅니다.
+
+                @Code(
+                    name: "DepthArrivalFeedbackResolver.swift",
+                    file: "03-03-01-DeduplicateArrival.swift",
+                    previousFile: "03-03-00-Arrival-Scaffold.swift"
+                )
+            }
+
+            @Step {
+                아직 열지 않은 위치에 들어왔을 때만 도착 신호를 만듭니다. 이 신호 하나가 도착 소리와
+                햅틱을 재생하게 합니다.
+
+                @Code(
+                    name: "DepthArrivalFeedbackResolver.swift",
+                    file: "03-03-02-ArrivalEvent.swift",
+                    previousFile: "03-03-01-DeduplicateArrival.swift"
+                )
+            }
+
+            @Step {
+                실기기를 시작점에서 앞뒤로 천천히 움직여 봅니다. 위치 사이에서는 다이얼이 선택되지 않고,
+                각 중심에 들어갈 때 도착 피드백이 한 번만 나는지 확인합니다.
+
+                @Image(
+                    source: "step-preview-depth.png",
+                    alt: "기기를 앞뒤로 움직여 세 깊이 위치 중 현재 자물쇠를 찾는 앱 화면"
+                )
+            }
+        }
+    }
+}

@@ -1,9 +1,13 @@
-name: Deploy DocC Preview
+name: Deploy SafeDial 007n
 
 on:
   push:
     branches:
       - main
+    paths:
+      - .github/workflows/deploy-docc.yml
+      - SafeDial-007n/**
+      - SOURCE_COMMIT
   workflow_dispatch:
 
 permissions:
@@ -15,31 +19,126 @@ concurrency:
   group: github-pages
   cancel-in-progress: true
 
+env:
+  DEVELOPER_DIR: /Applications/Xcode_26.4.app/Contents/Developer
+  SKETCH_ROOT: ${{ github.workspace }}/SafeDial-007n
+  SOURCE_REF: 2e2c7c6501423f1e770581c9864c5dd496c3a373
+  EXPECTED_ZIP_SHA256: a64f1f0b303fefc4dac47b8c8dd856c65c7c69b881db4dbc153819eb52730220
+
 jobs:
   build:
     runs-on: macos-26
-    env:
-      DEVELOPER_DIR: /Applications/Xcode_26.4.app/Contents/Developer
     steps:
-      - name: Check out repository
+      - name: Check out release snapshot
         uses: actions/checkout@v6
 
-      - name: Build DocC archive
+      - name: Verify source record
         run: |
+          test "$(tr -d '\n' < SOURCE_COMMIT)" = "$SOURCE_REF"
+          test -d "$SKETCH_ROOT"
+
+      - name: Validate tutorial snapshots
+        run: |
+          cd "$SKETCH_ROOT"
+          ./Tools/validate_tutorial_code_snapshots.sh
+
+      - name: Run runtime regression checks
+        run: |
+          cd "$SKETCH_ROOT"
+          ./Tools/headless-sim/run.sh
+          ./Tools/depth-zone-sim/run.sh
+          python3 Tools/validate_gain_ownership.py
+
+      - name: Build and validate DocC archive
+        run: |
+          cd "$SKETCH_ROOT"
           xcodebuild docbuild \
             -project safe-dial.xcodeproj \
             -scheme safe-dial \
-            -destination 'generic/platform=iOS Simulator' \
+            -destination 'generic/platform=iOS' \
             -derivedDataPath "$RUNNER_TEMP/docc-derived" \
             CODE_SIGNING_ALLOWED=NO \
             DOCC_HOSTING_BASE_PATH=2026TechMap_tutorial
 
-      - name: Prepare static site
+          archive_count=$(find "$RUNNER_TEMP/docc-derived" -type d -name '*.doccarchive' | wc -l | tr -d ' ')
+          test "$archive_count" -eq 1
+          archive=$(find "$RUNNER_TEMP/docc-derived" -type d -name '*.doccarchive' -print -quit)
+          python3 Tools/validate_docc_navigation.py "$archive"
+
+          diagnostics=$(find "$RUNNER_TEMP/docc-derived" -type f -name '*diagnostics.json' -print -quit)
+          test -n "$diagnostics"
+          test "$(jq '.diagnostics | length' "$diagnostics")" -eq 0
+          echo "DOCC_ARCHIVE=$archive" >> "$GITHUB_ENV"
+
+      - name: Create reproducible learner ZIP
         run: |
-          archive="$(find "$RUNNER_TEMP/docc-derived" -type d -name '*.doccarchive' -print -quit)"
-          test -n "$archive"
-          mkdir -p "$RUNNER_TEMP/site"
-          cp -R "$archive"/. "$RUNNER_TEMP/site"/
+          "$SKETCH_ROOT/Tools/package_tutorial_project.sh" \
+            "$RUNNER_TEMP/SafeDial-Tutorial-007n-a.zip"
+          "$SKETCH_ROOT/Tools/package_tutorial_project.sh" \
+            "$RUNNER_TEMP/SafeDial-Tutorial-007n-b.zip"
+          cmp \
+            "$RUNNER_TEMP/SafeDial-Tutorial-007n-a.zip" \
+            "$RUNNER_TEMP/SafeDial-Tutorial-007n-b.zip"
+
+          zip_sha=$(shasum -a 256 "$RUNNER_TEMP/SafeDial-Tutorial-007n-a.zip" | awk '{print $1}')
+          test "$zip_sha" = "$EXPECTED_ZIP_SHA256"
+          echo "ZIP_SHA256=$zip_sha" >> "$GITHUB_ENV"
+
+      - name: Build extracted learner project
+        run: |
+          mkdir -p "$RUNNER_TEMP/learner"
+          unzip -q "$RUNNER_TEMP/SafeDial-Tutorial-007n-a.zip" -d "$RUNNER_TEMP/learner"
+          cd "$RUNNER_TEMP/learner/SafeDial-Tutorial"
+
+          xcodebuild \
+            -project safe-dial.xcodeproj \
+            -scheme safe-dial \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/learner-debug" \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+          xcodebuild \
+            -project safe-dial.xcodeproj \
+            -scheme safe-dial \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath "$RUNNER_TEMP/learner-release" \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Prepare static site and redirects
+        run: |
+          site="$RUNNER_TEMP/site"
+          mkdir -p "$site/downloads" "$site/tutorials"
+          cp -R "$DOCC_ARCHIVE"/. "$site"/
+          cp "$RUNNER_TEMP/SafeDial-Tutorial-007n-a.zip" \
+            "$site/downloads/SafeDial-Tutorial-007n.zip"
+
+          printf '%s\n' \
+            '<!doctype html>' \
+            '<html lang="ko">' \
+            '<meta charset="utf-8">' \
+            '<title>SafeDial 튜토리얼로 이동</title>' \
+            '<meta http-equiv="refresh" content="0; url=./tutorials/safedial/">' \
+            '<script>window.location.replace("./tutorials/safedial/" + window.location.search + window.location.hash);</script>' \
+            '<body><a href="./tutorials/safedial/">SafeDial 튜토리얼 열기</a></body>' \
+            '</html>' > "$site/index.html"
+
+          printf '%s\n' \
+            '<!doctype html>' \
+            '<html lang="ko">' \
+            '<meta charset="utf-8">' \
+            '<title>SafeDial 튜토리얼로 이동</title>' \
+            '<meta http-equiv="refresh" content="0; url=./safedial/">' \
+            '<script>window.location.replace("./safedial/" + window.location.search + window.location.hash);</script>' \
+            '<body><a href="./safedial/">SafeDial 튜토리얼 열기</a></body>' \
+            '</html>' > "$site/tutorials/index.html"
+
+          test -f "$site/tutorials/safedial/index.html"
+          test -f "$site/downloads/SafeDial-Tutorial-007n.zip"
+          shasum -a 256 "$site/downloads/SafeDial-Tutorial-007n.zip"
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5

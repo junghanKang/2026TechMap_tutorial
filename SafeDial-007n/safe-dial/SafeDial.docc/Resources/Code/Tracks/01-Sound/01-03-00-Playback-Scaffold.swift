@@ -1,0 +1,4 @@
+import CoreHaptics
+
+extension AudioHapticsPlayer {
+}
