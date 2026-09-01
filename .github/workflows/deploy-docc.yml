@@ -1,4 +1,4 @@
-name: Deploy SafeDial 007n
+name: Deploy SafeDial 007o
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - main
     paths:
       - .github/workflows/deploy-docc.yml
-      - SafeDial-007n/**
+      - SafeDial-007o/**
       - SOURCE_COMMIT
   workflow_dispatch:
 
@@ -21,9 +21,9 @@ concurrency:
 
 env:
   DEVELOPER_DIR: /Applications/Xcode_26.4.app/Contents/Developer
-  SKETCH_ROOT: ${{ github.workspace }}/SafeDial-007n
-  SOURCE_REF: 2e2c7c6501423f1e770581c9864c5dd496c3a373
-  EXPECTED_ZIP_SHA256: a64f1f0b303fefc4dac47b8c8dd856c65c7c69b881db4dbc153819eb52730220
+  SKETCH_ROOT: ${{ github.workspace }}/SafeDial-007o
+  SOURCE_REF: 999a014eaaaf12220b3d09458be8df6ad5891223
+  EXPECTED_ZIP_SHA256: 502fbeee09df89d273e7425e1f845ae08fc66e12d1db1e3f297d21a31ef42b2e
 
 jobs:
   build:
@@ -37,9 +37,10 @@ jobs:
           test "$(tr -d '\n' < SOURCE_COMMIT)" = "$SOURCE_REF"
           test -d "$SKETCH_ROOT"
 
-      - name: Validate tutorial snapshots
+      - name: Validate tutorial media and snapshots
         run: |
           cd "$SKETCH_ROOT"
+          python3 Tools/validate_tutorial_media.py
           ./Tools/validate_tutorial_code_snapshots.sh
 
       - name: Run runtime regression checks
@@ -73,21 +74,24 @@ jobs:
       - name: Create reproducible learner ZIP
         run: |
           "$SKETCH_ROOT/Tools/package_tutorial_project.sh" \
-            "$RUNNER_TEMP/SafeDial-Tutorial-007n-a.zip"
+            "$RUNNER_TEMP/SafeDial-Tutorial-007o-a.zip"
           "$SKETCH_ROOT/Tools/package_tutorial_project.sh" \
-            "$RUNNER_TEMP/SafeDial-Tutorial-007n-b.zip"
+            "$RUNNER_TEMP/SafeDial-Tutorial-007o-b.zip"
           cmp \
-            "$RUNNER_TEMP/SafeDial-Tutorial-007n-a.zip" \
-            "$RUNNER_TEMP/SafeDial-Tutorial-007n-b.zip"
+            "$RUNNER_TEMP/SafeDial-Tutorial-007o-a.zip" \
+            "$RUNNER_TEMP/SafeDial-Tutorial-007o-b.zip"
+          cmp \
+            "$RUNNER_TEMP/SafeDial-Tutorial-007o-a.zip" \
+            "$SKETCH_ROOT/safe-dial/SafeDial.docc/Resources/Downloads/SafeDial-Tutorial-007o.zip"
 
-          zip_sha=$(shasum -a 256 "$RUNNER_TEMP/SafeDial-Tutorial-007n-a.zip" | awk '{print $1}')
+          zip_sha=$(shasum -a 256 "$RUNNER_TEMP/SafeDial-Tutorial-007o-a.zip" | awk '{print $1}')
           test "$zip_sha" = "$EXPECTED_ZIP_SHA256"
           echo "ZIP_SHA256=$zip_sha" >> "$GITHUB_ENV"
 
       - name: Build extracted learner project
         run: |
           mkdir -p "$RUNNER_TEMP/learner"
-          unzip -q "$RUNNER_TEMP/SafeDial-Tutorial-007n-a.zip" -d "$RUNNER_TEMP/learner"
+          unzip -q "$RUNNER_TEMP/SafeDial-Tutorial-007o-a.zip" -d "$RUNNER_TEMP/learner"
           cd "$RUNNER_TEMP/learner/SafeDial-Tutorial"
 
           xcodebuild \
@@ -113,8 +117,8 @@ jobs:
           site="$RUNNER_TEMP/site"
           mkdir -p "$site/downloads" "$site/tutorials"
           cp -R "$DOCC_ARCHIVE"/. "$site"/
-          cp "$RUNNER_TEMP/SafeDial-Tutorial-007n-a.zip" \
-            "$site/downloads/SafeDial-Tutorial-007n.zip"
+          cp "$RUNNER_TEMP/SafeDial-Tutorial-007o-a.zip" \
+            "$site/downloads/SafeDial-Tutorial-007o.zip"
 
           printf '%s\n' \
             '<!doctype html>' \
@@ -137,8 +141,8 @@ jobs:
             '</html>' > "$site/tutorials/index.html"
 
           test -f "$site/tutorials/safedial/index.html"
-          test -f "$site/downloads/SafeDial-Tutorial-007n.zip"
-          shasum -a 256 "$site/downloads/SafeDial-Tutorial-007n.zip"
+          test -f "$site/downloads/SafeDial-Tutorial-007o.zip"
+          shasum -a 256 "$site/downloads/SafeDial-Tutorial-007o.zip"
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5

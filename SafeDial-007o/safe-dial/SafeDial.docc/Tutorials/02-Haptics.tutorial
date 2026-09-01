@@ -1,0 +1,142 @@
+@Tutorial(time: 25, projectFiles: "SafeDial-Tutorial-007o.zip") {
+    @XcodeRequirement(
+        title: "Xcode 26.4 or later",
+        destination: "https://developer.apple.com/download/"
+    )
+
+    @Intro(title: "소리와 햅틱 함께 만들기") {
+        @Image(
+            source: "tutorial-chapter-haptics.png",
+            alt: "같은 시간축에 맞춰진 파란색 오디오 막대와 산호색 햅틱 펄스, 그 뒤로 퍼지는 동심원"
+        )
+
+        다이얼 눈금 하나를 지날 때 짧고 또렷한 진동이 느껴지게 합니다. AHAP 파일 안에서 소리와
+        햅틱을 같은 시각에 시작해, 두 감각이 따로 느껴지지 않게 합니다.
+
+        이 장을 마치면 하나의 AHAP에서 소리와 햅틱을 함께 시작하고, 다이얼 상태에 따라 두 세기를
+        따로 조절할 수 있습니다.
+
+        AHAP은 소리와 햅틱의 시간표를 적는 JSON 파일입니다. 처음이라면 Apple의
+        [AHAP 파일 형식 설명](https://developer.apple.com/documentation/corehaptics/representing-haptic-patterns-in-ahap-files)을
+        읽어 보세요. 값을 바꾼 뒤에는 실기기에서 소리와 진동이 함께 시작하는지 확인합니다.
+    }
+
+    @Section(title: "하나의 AHAP에 소리와 햅틱 넣기") {
+        @ContentAndMedia {
+            AHAP의 `Pattern` 배열은 하나의 시간표입니다. `transient`는 짧은 한 번의 톡, `continuous`는
+            일정 시간 이어지는 진동입니다. 이 앱은 시간 0에 톡과 짧은 진동, WAV 소리를 함께 놓습니다.
+
+            각 패널은 열어 볼 수 있는 완전한 JSON 파일입니다. 다음 단계에서는 바로 앞 파일에 event
+            하나만 더합니다.
+
+            시간축을 왼쪽에서 오른쪽으로 읽으며 0ms에 `transient`, `body`, `audio`가 함께 시작하고
+            16ms까지 `tail`이 이어지는지 확인하세요.
+
+            @Image(
+                source: "tutorial-section-ahap-timeline.png",
+                alt: "0밀리초에 함께 시작하는 transient, body, audio와 16밀리초까지 이어지는 tail을 나타낸 AHAP 시간축"
+            )
+        }
+
+        @Steps {
+            @Step {
+                시간 0에 짧고 선명한 `HapticTransient`를 추가합니다. `intensity`는 진동 세기이고,
+                `sharpness`는 단단하고 날카롭게 느껴지는 정도입니다.
+
+                @Code(
+                    name: "dial-detent-01.ahap",
+                    file: "02-01-01-HapticTransient.ahap",
+                    previousFile: "02-01-00-DetentPattern-Scaffold.ahap"
+                )
+            }
+
+            @Step {
+                첫 진동 뒤에 8밀리초짜리 약한 꼬리를 더합니다. 진동이 뚝 끊기지 않고 아주 짧게
+                사라지게 합니다.
+
+                @Code(
+                    name: "dial-detent-01.ahap",
+                    file: "02-01-02-HapticTail.ahap",
+                    previousFile: "02-01-01-HapticTransient.ahap"
+                )
+            }
+
+            @Step {
+                시간 0에 8밀리초 동안 이어지는 진동을 추가합니다. 앞의 톡과 뒤의 꼬리를 이어, 한 번의
+                짧은 기계식 접점처럼 느껴지게 합니다.
+
+                @Code(
+                    name: "dial-detent-01.ahap",
+                    file: "02-01-03-HapticBody.ahap",
+                    previousFile: "02-01-02-HapticTail.ahap"
+                )
+            }
+
+            @Step {
+                같은 시간 0에 `AudioCustom` event를 추가하고 눈금 WAV를 연결합니다. 이제 재생기를
+                한 번 시작하면 소리와 햅틱이 함께 시작됩니다.
+
+                @Code(
+                    name: "dial-detent-01.ahap",
+                    file: "02-01-04-AudioEvent.ahap",
+                    previousFile: "02-01-03-HapticBody.ahap"
+                )
+            }
+        }
+    }
+
+    @Section(title: "게임 상태에 맞춰 소리와 햅틱 세기 바꾸기") {
+        @ContentAndMedia {
+            AHAP은 진동과 소리가 언제 시작하고 얼마나 이어질지 정합니다. `FeedbackProfile`은 각 눈금의
+            세기를 정합니다. 게임이 정답과의 거리, 회전 방향을 보내면 이 타입이 0에서 1 사이의 소리·햅틱
+            세기(`gain`)로 바꿉니다.
+
+            같은 거리 값으로 계산해도 소리와 햅틱의 최소 세기, 변화 속도는 따로 정할 수 있습니다.
+            계산 결과는 완성 프로젝트의 다이얼 재생 경로에서 사용합니다.
+
+            가로축의 `proximity`가 0에서 1로 커질 때 소리와 햅틱 곡선이 각자의 최소값에서 최대값으로
+            오르고, 반대 방향 곡선은 같은 입력을 0.25배로 줄이는지 비교하세요.
+
+            @Image(
+                source: "tutorial-section-feedback-curves.png",
+                alt: "proximity에 따라 서로 다른 속도로 커지는 소리와 햅틱 gain 곡선과 반대 방향에서 0.25배로 줄어드는 곡선"
+            )
+        }
+
+        @Steps {
+            @Step {
+                반대 방향일 때 줄일 비율, 변화 속도, 소리와 햅틱의 최소·최대 세기를 이름 있는 값으로
+                정합니다. 숫자를 한곳에 두면 나중에 조절하기 쉽습니다.
+
+                @Code(
+                    name: "FeedbackProfile.swift",
+                    file: "02-02-01-FeedbackRange.swift",
+                    previousFile: "02-02-00-FeedbackProfile-Scaffold.swift"
+                )
+            }
+
+            @Step {
+                정답에 얼마나 가까운지를 0과 1 사이 값으로 제한합니다. 반대 방향이면 먼저 세기를 줄이고,
+                그 뒤 소리와 햅틱이 각각 얼마나 빠르게 커질지 계산합니다.
+
+                @Code(
+                    name: "FeedbackProfile.swift",
+                    file: "02-02-02-ResponseCurves.swift",
+                    previousFile: "02-02-01-FeedbackRange.swift"
+                )
+            }
+
+            @Step {
+                계산한 두 값을 각 출력 범위에 맞춰 최종 세기로 바꿉니다. 재생 코드는 거리 값을 다시
+                계산하지 않고 이 세기를 그대로 보냅니다.
+
+                @Code(
+                    name: "FeedbackProfile.swift",
+                    file: "02-02-03-OutputGains.swift",
+                    previousFile: "02-02-02-ResponseCurves.swift"
+                )
+            }
+        }
+    }
+
+}
