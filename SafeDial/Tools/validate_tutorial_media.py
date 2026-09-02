@@ -16,10 +16,10 @@ IMAGES = CATALOG / "Resources" / "Images"
 MAX_FILE_BYTES = 50 * 1024 * 1024
 HERO_SIZE = (1600, 900)
 SECTION_SIZE = (1400, 1400)
-PROJECT_FILES_NAME = "SafeDial-Tutorial-007o.zip"
+PROJECT_FILES_NAME = "SafeDial-Tutorial.zip"
 PROJECT_FILES_PATH = CATALOG / "Resources" / "Downloads" / PROJECT_FILES_NAME
 PROJECT_FILES_SHA256 = (
-    "502fbeee09df89d273e7425e1f845ae08fc66e12d1db1e3f297d21a31ef42b2e"
+    "552ce777b79fbcb3a1f926e814f7db84a4c4db5d739ee1c448637fa22655f08f"
 )
 XCODE_TITLE = "Xcode 26.4 or later"
 XCODE_DESTINATION = "https://developer.apple.com/download/"
@@ -226,7 +226,7 @@ def validate_tutorial_header_contract() -> None:
 
     catalog_source = (CATALOG / "SafeDial.tutorial").read_text(encoding="utf-8")
     if "SafeDial-Tutorial-007n.zip" in catalog_source:
-        fail("The current 007o catalog must not link to the historical 007n ZIP")
+        fail("The current SafeDial catalog must not link to the historical 007n ZIP")
     if "**Project files**" not in catalog_source:
         fail("The catalog intro must direct learners to the Project files header")
 
@@ -264,12 +264,12 @@ def validate_project_files_archive() -> None:
                 fail(f"projectFiles ZIP is missing {required_member}")
         project_source = archive.read(project_file).decode("utf-8")
         if project_source.count(
-            "PRODUCT_BUNDLE_IDENTIFIER = com.spatiallab.sketch007o;"
+            "PRODUCT_BUNDLE_IDENTIFIER = com.spatiallab.safedialtutorial;"
         ) != 2:
-            fail("projectFiles ZIP does not contain both 007o bundle identifiers")
+            fail("projectFiles ZIP does not contain both SafeDial bundle identifiers")
         learner_readme = archive.read(readme).decode("utf-8")
-        if "com.spatiallab.sketch007o" not in learner_readme:
-            fail("projectFiles ZIP README does not describe the 007o bundle identifier")
+        if "com.spatiallab.safedialtutorial" not in learner_readme:
+            fail("projectFiles ZIP README does not describe the SafeDial bundle identifier")
 
     ignore_rule = (
         "!safe-dial/SafeDial.docc/Resources/Downloads/"
@@ -365,7 +365,7 @@ def main() -> None:
         "Tutorial media validation passed: 8 unique ContentAndMedia images, "
         "5 light/dark 1600x900 hero pairs and 8 light/dark 1400x1400 "
         "section pairs, files under 50MB, "
-        "no MP4/MOV files or tutorial references, valid 007o projectFiles ZIP, "
+        "no MP4/MOV files or tutorial references, valid SafeDial projectFiles ZIP, "
         "Xcode 26.4 or later header contract."
     )
 

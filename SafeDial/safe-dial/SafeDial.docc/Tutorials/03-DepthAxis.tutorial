@@ -1,0 +1,193 @@
+@Tutorial(time: 40, projectFiles: "SafeDial-Tutorial.zip") {
+    @XcodeRequirement(
+        title: "Xcode 26.4 or later",
+        destination: "https://developer.apple.com/download/"
+    )
+
+    @Intro(title: "앞뒤 움직임으로 위치 찾기") {
+        @Image(
+            source: "tutorial-chapter-depth-axis.png",
+            alt: "고정된 전방 화살표 위의 0·10·20센티미터 깊이 지점과 각 위치를 나타내는 원형 표식"
+        )
+
+        ARKit의 월드 좌표계 Z축 값을 그대로 쓰지 않습니다. 시작할 때 기기가 바라보던 방향을 기준 축으로 고정하고, 그 뒤의 이동만을 그 방향에 투영해 순수한 전후방 깊이 이동 거리로 변환합니다.
+
+        이 장을 마치면 시작 방향을 기준으로 앞뒤 거리를 정확히 측정하고, 작은 흔들림에도 쉽게 상태가 튀지 않는 안정적인 세 깊이 구간(Depth Zone)을 구현할 수 있습니다.
+
+        ARKit이 낯설다면 Apple의
+        [ARWorldTrackingConfiguration](https://developer.apple.com/documentation/arkit/arworldtrackingconfiguration)과
+        [카메라 transform](https://developer.apple.com/documentation/arkit/arcamera/transform) 문서를 먼저 읽어 보세요.
+        시뮬레이터는 실제 공간 이동을 측정할 수 없으므로 최종 확인은 반드시 실제 iPhone 기기에서 진행해야 합니다.
+    }
+
+    @Section(title: "처음 바라본 방향을 기준으로 삼기") {
+        @ContentAndMedia {
+            World Tracking은 기기의 3차원 위치와 방향을 알려 줍니다. 하지만 매 프레임 "앞" 방향을 새로 잡으면, 손목을 돌린 회전까지 앞뒤 이동으로 잘못 해석할 수 있습니다. 첫 정상 프레임의 위치와 방향을 시작점으로 저장하고, 재보정하거나 세션이 중단되기 전까지 이 기준 축을 유지합니다.
+
+            추적을 신뢰할 수 없을 때의 깊이는 0m가 아닙니다. `depth`를 옵셔널(`Double?`)로 두어, 유효한 측정값이 없는 상태(`nil`)와 실제 시작점(0.0m)을 명확히 구분합니다.
+
+            도식에서 첫 위치를 원점으로 잡고, 저장한 `forward` 벡터 위에 이동 변위(`displacement`)를 투영해 깊이를 얻는 순서로 읽으세요. 기기를 회전해도 `forward` 축이 바뀌지 않아야 기준 축이 올바르게 고정된 것입니다.
+
+            @Image(
+                source: "tutorial-section-fixed-depth-axis.png",
+                alt: "첫 카메라 위치와 고정된 forward 벡터를 기준으로 displacement를 투영해 앞뒤 깊이를 구하는 관계"
+            )
+        }
+
+        @Steps {
+            @Step {
+                앞뒤 거리, 카메라 추적 상태, 프레임 시각을 `Reading` 구조체 하나로 묶습니다. `depth`가 `Double?` 타입의 `nil`이면 불필요한 위치 판정을 진행하지 않고 사용자에게 추적을 회복하라고 안내할 수 있습니다.
+
+                @Code(
+                    name: "DepthTrackingManager.swift",
+                    file: "03-01-01-TrackingReading.swift",
+                    previousFile: "03-01-00-Tracking-Scaffold.swift"
+                )
+            }
+
+            @Step {
+                `ARWorldTrackingConfiguration`으로 세션을 시작하고, 새 프레임을 수신할 delegate를 연결합니다.
+                기준 축을 다시 잡을 때는 세션을 새로 만들지 않고, 저장한 시작점만 비운 뒤 다음 정상 프레임을 기다려 재캡처합니다.
+
+                @Code(
+                    name: "DepthTrackingManager.swift",
+                    file: "03-01-02-WorldTracking.swift",
+                    previousFile: "03-01-01-TrackingReading.swift"
+                )
+            }
+
+            @Step {
+                카메라 추적 상태가 `.normal`이 아니면 거리 연산 없이 `depth`가 `nil`인 `Reading`을 보내고 종료합니다. 신뢰할 수 있는 정상 프레임만 다음 단계의 기준 축에 전달해 거리를 계산함으로써 부정확한 값이 시작점이나 위치 판정에 섞이지 않게 차단합니다.
+
+                @Code(
+                    name: "DepthTrackingManager.swift",
+                    file: "03-01-03-RejectInvalidTracking.swift",
+                    previousFile: "03-01-02-WorldTracking.swift"
+                )
+            }
+
+            @Step {
+                첫 정상 프레임의 월드 변환 행렬에서 위치와 카메라가 바라보는 전방 방향 벡터를 추출해 캐시합니다. 재보정 전까지는 이후 기기를 회전하더라도 이 기준 좌표계를 유지합니다.
+
+                @Code(
+                    name: "FixedDepthAxis.swift",
+                    file: "03-01-04-FixedForwardAxis.swift",
+                    previousFile: "03-01-04-Projection-Scaffold.swift"
+                )
+            }
+
+            @Step {
+                현재 위치에서 시작 위치를 뺀 변위 벡터를 구하고, 이를 고정된 전방 벡터에 내적 투영합니다. 이 투영 스칼라 값이 시작점을 기준으로 기기가 앞뒤로 이동한 거리(m)가 됩니다.
+
+                @Code(
+                    name: "FixedDepthAxis.swift",
+                    file: "03-01-05-ProjectDepth.swift",
+                    previousFile: "03-01-04-FixedForwardAxis.swift"
+                )
+            }
+        }
+    }
+
+    @Section(title: "연속된 거리를 세 위치로 나누기") {
+        @ContentAndMedia {
+            자물쇠의 위치는 시작점(0cm), 10cm 앞, 20cm 앞입니다. 중심에서 3cm 안으로 들어오면 그 위치를 선택하고, 한 번 선택된 위치는 4.5cm 밖으로 벗어날 때까지 유지합니다. 들어올 때의 진입 반경보다 나갈 때의 유지 반경을 넓게 설정하는 히스테리시스를 적용해 손떨림과 미세한 센서 오차를 흡수합니다.
+
+            새로운 위치를 찾기 전에 현재 위치를 계속 유지할 수 있는지 먼저 확인합니다. 활성화된 위치 범위를 완전히 벗어난 뒤에만 새 위치를 탐색해야 경계면에서 두 자물쇠가 번갈아 튀듯 선택되는 채터링을 막을 수 있습니다.
+
+            0·10·20cm 각 중심의 진입 범위 3cm와 유지 범위 4.5cm를 안쪽·바깥쪽 띠로 비교해 보세요. 선택한 위치가 바깥 띠를 벗어나기 전까지 유지되면 히스테리시스가 올바르게 동작하는 것입니다.
+
+            @Image(
+                source: "tutorial-section-depth-hysteresis.png",
+                alt: "0, 10, 20센티미터 중심마다 안쪽 3센티미터 진입 범위와 바깥쪽 4.5센티미터 유지 범위를 비교한 깊이 구간"
+            )
+        }
+
+        @Steps {
+            @Step {
+                세 위치의 식별자, 중심 거리(Center), 진입 범위(3cm), 유지 범위(4.5cm), 현재 선택된 위치 상태를 정의합니다. 코드는 지오메트리 계산의 일관성을 위해 모든 거리를 미터(m) 단위로 관리합니다.
+
+                @Code(
+                    name: "DepthZoneResolver.swift",
+                    file: "03-02-01-ZoneCenters.swift",
+                    previousFile: "03-02-00-Zones-Scaffold.swift"
+                )
+            }
+
+            @Step {
+                중심 개수, 두 범위의 대소 관계(`entryRadius < exitRadius`), 인접한 위치 간의 과도한 중첩 여부를 `precondition`으로 검증합니다. 잘못된 설정값은 앱이 오작동하기 전에 인스턴스 생성 시점에서 엄격히 걸러냅니다.
+
+                @Code(
+                    name: "DepthZoneResolver.swift",
+                    file: "03-02-02-ValidateConfiguration.swift",
+                    previousFile: "03-02-01-ZoneCenters.swift"
+                )
+            }
+
+            @Step {
+                현재 선택된 위치가 있다면 중심과의 거리가 유지 범위(4.5cm) 안에 머무는지 먼저 확인합니다. 그 범위를 벗어나지 않았다면 현재 위치를 유지하고, 완전히 벗어난 뒤에만 새 위치를 평가합니다.
+
+                @Code(
+                    name: "DepthZoneResolver.swift",
+                    file: "03-02-03-HoldCurrentZone.swift",
+                    previousFile: "03-02-02-ValidateConfiguration.swift"
+                )
+            }
+
+            @Step {
+                현재 위치를 벗어난 상태라면 정의된 세 중심의 진입 범위(3cm)를 순서대로 확인합니다. 어느 진입 범위에도 속하지 않으면 `nil`을 반환하여, 두 위치 사이에는 아무 자물쇠도 선택되지 않는 중립 공간을 둡니다.
+
+                @Code(
+                    name: "DepthZoneResolver.swift",
+                    file: "03-02-04-EnterNewZone.swift",
+                    previousFile: "03-02-03-HoldCurrentZone.swift"
+                )
+            }
+        }
+    }
+
+    @Section(title: "새 위치에 도착한 순간만 알리기") {
+        @ContentAndMedia {
+            ARKit은 프레임을 연속적으로 전달하므로 동일한 위치 판정 결과가 반복해서 들어옵니다. 하지만 도착 피드백은 새로운 구간에 들어선 순간에만 단 한 번 울려야 합니다. 리졸버는 마지막 위치를 기억해 두고, 실제로 상태가 달라졌을 때만 다음 단계를 평가합니다.
+
+            이미 푼 자물쇠 위치로 돌아가는 것은 새로운 진행이 아닙니다. 현재 순서와 관계없이 아직 해결하지 않은 자물쇠 위치에 진입했을 때만 도착 이벤트를 전달합니다.
+
+            '진입 ➔ 머묾 ➔ 이탈 ➔ 재진입' 흐름을 따라가며 도착 신호가 각 진입 전환에서 한 번씩만 발생하는지 확인하세요.
+
+            @Image(
+                source: "tutorial-section-arrival-deduplication.png",
+                alt: "위치 진입 때 도착 신호가 한 번 발생하고 머무는 동안 억제되며 이탈 후 재진입 때 다시 한 번 발생하는 상태 흐름"
+            )
+        }
+
+        @Steps {
+            @Step {
+                현재 게임 상태가 유효한지와 선택한 위치가 이전과 달라졌는지를 확인한 뒤, 현재 위치를 갱신합니다. 같은 위치에 머무르고 있는 연속 프레임은 여기서 걸러집니다.
+
+                @Code(
+                    name: "DepthArrivalFeedbackResolver.swift",
+                    file: "03-03-01-DeduplicateArrival.swift",
+                    previousFile: "03-03-00-Arrival-Scaffold.swift"
+                )
+            }
+
+            @Step {
+                새로 진입한 위치가 아직 해결되지 않은 자물쇠(`rawValue >= solvedCount`)일 때만 단발성 `DepthArrivalFeedbackResolver.Event`를 생성합니다. 이 이벤트가 도착 소리와 햅틱을 재생하게 합니다.
+
+                @Code(
+                    name: "DepthArrivalFeedbackResolver.swift",
+                    file: "03-03-02-ArrivalEvent.swift",
+                    previousFile: "03-03-01-DeduplicateArrival.swift"
+                )
+            }
+
+            @Step {
+                실제 기기를 들고 시작점에서 앞뒤로 천천히 움직여 봅니다. 위치 사이의 중립 공간에서는 다이얼이 선택되지 않고, 각 중심의 3cm 진입 범위에 들어오는 순간 도착 피드백이 한 번만 발생하는지 확인합니다.
+
+                @Image(
+                    source: "step-preview-depth.png",
+                    alt: "기기를 앞뒤로 움직여 세 깊이 위치 중 현재 자물쇠를 찾는 앱 화면"
+                )
+            }
+        }
+    }
+}

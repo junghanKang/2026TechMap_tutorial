@@ -8,7 +8,7 @@ from pathlib import Path
 
 
 EXPECTED_PROJECTS = ["01-Sound", "02-Haptics", "03-DepthAxis", "04-Integration"]
-PROJECT_FILES = "SafeDial-Tutorial-007o.zip"
+PROJECT_FILES = "SafeDial-Tutorial.zip"
 XCODE_TITLE = "Xcode 26.4 or later"
 XCODE_DESTINATION = "https://developer.apple.com/download/"
 
@@ -72,11 +72,11 @@ def main() -> None:
     catalog = load(archive / "data" / "tutorials" / "safedial.json")
     rendered_catalog = json.dumps(catalog, ensure_ascii=False)
     if "SafeDial-Tutorial-007n.zip" in rendered_catalog:
-        fail("The current 007o catalog still references the historical 007n ZIP")
+        fail("The current SafeDial catalog still references the historical 007n ZIP")
 
     print(
         "DocC navigation passed: unique Chapters, 1→2→3→4 order, "
-        "007o Project Files, Xcode 26.4 or later."
+        "SafeDial Project Files, Xcode 26.4 or later."
     )
 
 

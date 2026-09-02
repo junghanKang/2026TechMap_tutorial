@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# 007o DocC projectFiles에 넣을 학습자용 실행 프로젝트 ZIP을 만든다.
+# SafeDial DocC projectFiles에 넣을 학습자용 실행 프로젝트 ZIP을 만든다.
 set -euo pipefail
 
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 SKETCH_ROOT=$(cd -- "$SCRIPT_DIR/.." && pwd)
-OUTPUT_PATH=${1:-/tmp/SafeDial-Tutorial-007o-candidate.zip}
+OUTPUT_PATH=${1:-/tmp/SafeDial-Tutorial-candidate.zip}
 
 # Normalize permissions as well as timestamps so the archive is independent of
 # the machine or CI runner's inherited umask.

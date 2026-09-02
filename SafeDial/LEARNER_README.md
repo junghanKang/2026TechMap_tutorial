@@ -14,7 +14,7 @@
 
 1. `safe-dial.xcodeproj`를 엽니다.
 2. `safe-dial` target의 **Signing & Capabilities**에서 자신의 Team을 선택합니다.
-3. 서명 충돌이 나면 Bundle Identifier `com.spatiallab.sketch007o`를 자신의 고유한 값으로
+3. 서명 충돌이 나면 Bundle Identifier `com.spatiallab.safedialtutorial`을 자신의 고유한 값으로
    바꿉니다. 예: `com.example.SafeDialTutorial`
 4. 연결한 기기를 선택하고 Run합니다.
 5. 첫 실행에서 카메라 사용을 허용한 뒤 화면 안내에 따라 시작점을 설정합니다.

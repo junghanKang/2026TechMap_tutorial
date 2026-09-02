@@ -1,0 +1,57 @@
+@Tutorial(time: 15, projectFiles: "SafeDial-Tutorial.zip") {
+    @XcodeRequirement(
+        title: "Xcode 26.4 or later",
+        destination: "https://developer.apple.com/download/"
+    )
+
+    @Intro(title: "네 번째 자물쇠 추가하기") {
+        @Image(
+            source: "tutorial-chapter-integration.png",
+            alt: "0·10·20센티미터 세 위치가 점선 30센티미터 추가 지점으로 확장되고 네 소비자 노드로 이어지는 개념도"
+        )
+
+        완성 프로젝트의 세 자물쇠 구조를 네 번째 자물쇠까지 확장하는 실습을 진행합니다.
+        30cm 깊이에 새 위치를 추가하고, 화면 제목과 캡션에 고정된 텍스트를 정리하여 프로젝트 아키텍처가 동적 확장을 수용하도록 다듬어 봅니다.
+
+        이 장을 마치면 4개의 깊이 위치를 차례로 찾아 자물쇠를 열고, 네 번째 자물쇠까지 모두 푼 뒤에만 완료 화면이 나타나도록 확장할 수 있습니다.
+    }
+
+    @Section(title: "네 번째 자물쇠 확장 실습하기") {
+        @ContentAndMedia {
+            기존 앱은 세 자물쇠를 기준으로 구성되어 있습니다. 이 섹션에서는 프로젝트에 제공된 `FourthLockExercise` 예시 코드를 통해 네 번째 자물쇠를 추가할 때 어떤 값과 타입들을 확장해야 하는지 단계별로 익혀 봅니다.
+
+            도식의 0·10·20cm 구조에 30cm 위치를 더한 뒤, 위치 배열·다이얼 설정·진행 표시·완료 조건이 모두 네 개의 자물쇠를 일관되게 참조하는 흐름을 따라가 보세요. 이 다이어그램은 확장을 위한 목표 설계도입니다.
+
+            @Image(
+                source: "tutorial-section-fourth-lock-extension.png",
+                alt: "기존 0, 10, 20센티미터 위치에 30센티미터 네 번째 위치를 더하고 위치 배열, 다이얼 설정, 진행 표시, 완료 조건을 함께 확장하는 설계도"
+            )
+        }
+
+        @Steps {
+            @Step {
+                **30cm 위치 확장 설계:** `FourthLockExercise` 예시를 통해 새 위치 케이스 `.distant`를 추가하고, 설정의 `centersMeters`에 `0.30`을 등록하는 구조를 살펴봅니다. 상위 모델에서도 네 위치를 동일한 순서로 배열해야 위치 판정이 올바르게 이어집니다.
+
+                @Code(
+                    name: "FourthLockExercise.swift",
+                    file: "04-05-01-FourthLocation.swift",
+                    previousFile: "04-05-00-FourthLockExercise-Scaffold.swift"
+                )
+            }
+
+            @Step {
+                **고정 텍스트 정리와 동적 카운트 연동:** 게임 완료 판정과 진행도 뷰는 이미 자물쇠 개수를 동적으로 계산하도록 구현되어 있습니다. 화면 상단 타이틀이나 `SafeDialModel.lockCaption`처럼 "세 개"로 남아 있는 고정 문구를 위치 개수(`lockCount`)에 맞춰 동적으로 바뀌도록 확장하는 패턴을 익힙니다.
+
+                @Code(
+                    name: "FourthLockExercise.swift",
+                    file: "04-05-02-DynamicLockCount.swift",
+                    previousFile: "04-05-01-FourthLocation.swift"
+                )
+            }
+
+            @Step {
+                **네 위치 완주 동작 확인:** 설계를 프로젝트에 반영한 뒤 실제 기기에서 0·10·20·30cm 위치를 차례로 찾아 각 다이얼을 열어 봅니다. 네 번째 자물쇠를 푼 뒤에만 완료 화면이 나타나고, 진행 표시와 접근성 안내가 네 개를 기준으로 자연스럽게 동작하는지 확인합니다.
+            }
+        }
+    }
+}
